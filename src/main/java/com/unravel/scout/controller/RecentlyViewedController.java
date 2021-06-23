@@ -1,6 +1,7 @@
 package com.unravel.scout.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.unravel.scout.model.constants.ApiResponseMessages;
 import com.unravel.scout.model.dto.TripDto;
@@ -14,7 +15,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,15 +38,12 @@ public class RecentlyViewedController {
 			message = ApiResponseMessages.RECENTLY_VIEWED,
 			response = TripDto.class,
 			responseContainer = "List")
-	 public ResponseEntity<?> getAllSuggestionByUserId(@PathVariable (value = "userId") String userId, @RequestParam ("count") int count) {
+	 public ResponseEntity<?> getAllSuggestionByUserId(@PathVariable (value = "userId", required = false) String userId, @RequestParam (value = "count",required = false) Integer count) {
 
 		log.info(String.format("GET %s", EndpointRoutesV1.USER_RECENTLY_VIEWED));
 		log.info(String.format("Get user recently viewed items::%s", userId));
-		List<RecentlyViewedResponseDto> items = recentlyViewedService.recentlyViewedByUserId(userId,count);
-
-		log.info("SUCCESS");
-		return new ResponseEntity(
-				new RestResponseWrapper<>(1, items, ApiResponseMessages.ITEM_FETCHED), HttpStatus.OK);
+		
+		return recentlyViewedService.recentlyViewedByUserId(userId,count);
 
 	  }
 	 
