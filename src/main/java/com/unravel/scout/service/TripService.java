@@ -18,6 +18,7 @@ import com.unravel.scout.model.exceptions.ResourceNotFoundException;
 import com.unravel.scout.model.request.LikeRequest;
 import com.unravel.scout.model.request.ShareTripRequest;
 import com.unravel.scout.model.request.TripChangeRequest;
+import com.unravel.scout.model.response.RestResponseWrapper;
 import com.unravel.scout.repositories.ItemDetailRepository;
 import com.unravel.scout.repositories.ItemSubTypeRepository;
 import com.unravel.scout.repositories.TripsRepository;
@@ -31,6 +32,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -304,6 +307,7 @@ public class TripService {
     }
 
     public  List<CountryResponseDto> fetchCountryByItemType(String userId, int count) {
+    	
         List<ItemDetail> items = new ArrayList<>();
         if(count==0) {
             items = itemDetailRepository.findByItemType(ItemType.COUNTRY.toString());
@@ -316,24 +320,46 @@ public class TripService {
         return	items.stream().map(CountryResponseDto::getCountryList).collect(Collectors.toList());
     }
 
-    public UnravelResponse fetchCategoryByTripId(String tripId, int page,int size) {
+    public UnravelResponse fetchCategoryByTripId(Optional<String> tripId, Optional<Integer> page,Optional<Integer> size) {
         Pageable paging;
         Page<ItemSubType> categoryTrip = null ;
         List<ItemDetail> tripItems= new ArrayList<>();
         UnravelResponse response = new UnravelResponse();
 
-        if(size==0 || page == 0)
+        
+        if(!tripId.isPresent()) {
+          	 log.info("Failed");
+          	  response.setStatus(UnravelConstants.FALSE);
+              response.setMessage(ApiResponseMessages.TRIP_ID_NULL);
+              return response;
+          }
+        else if(!page.isPresent()) {
+         	 log.info("Failed");
+         	  response.setStatus(UnravelConstants.FALSE);
+             response.setMessage(ApiResponseMessages.PAGE_NOT_FOUND);
+             return response;
+         }
+        
+        else if(!size.isPresent()) {
+        	 log.info("Failed");
+        	  response.setStatus(UnravelConstants.FALSE);
+            response.setMessage(ApiResponseMessages.SIZE_NOT_FOUND);
+            return response;
+        }
+        
+      
+        if(size.get()==0 || page.get()== 0)
             paging = Pageable.unpaged();
         else
-            paging = PageRequest.of(page, size);
+            paging = PageRequest.of(page.get(), size.get());
 
-        if(tripId.isEmpty())
+        if(tripId.get().isEmpty())
             categoryTrip = itemSubTypeRepository.findAll(paging);
         else
-            tripItems = itemDetailRepository.findByItemTypeAndId(ItemType.TRIP.toString(),UUID.fromString(tripId),paging);
+            tripItems = itemDetailRepository.findByItemTypeAndId(ItemType.TRIP.toString(),UUID.fromString(tripId.get()),paging);
 
 
-        if(tripId.isEmpty()){
+        if(tripId.get().isEmpty()){
             response.setData(CategoryDetailDto.mapToCategoryListDto(categoryTrip.getContent()));
             if(categoryTrip==null){
                 log.debug("No item found for  trip-id: {} userId: {}", tripId);
@@ -400,18 +426,35 @@ public class TripService {
         return response;
     }
 
-    public  UnravelResponse fetchItemsBySubType(String subtypeId, int count) {
+    public  UnravelResponse fetchItemsBySubType(Optional<String> subtypeId, Optional<Integer> size) {
+    	
         UnravelResponse response = new UnravelResponse();
-        List<ItemDetail> items =  itemDetailRepository.findTopN(Long.valueOf(subtypeId),count);
-        if(items.isEmpty()){
-            log.debug("No item found for  sub type-id: {} ", subtypeId);
-            response.setStatus(UnravelConstants.FALSE);
-            response.setMessage("No Record found");
+       
+    	 if(!subtypeId.isPresent() || subtypeId.get() == null || subtypeId.get().equals("")) {
+    	   	 	log.info("Failed");
+	    	   	response.setStatus(UnravelConstants.FALSE);
+	            response.setMessage( ApiResponseMessages.SUB_TYPE_NULL);
             return response;
-        }
-        response.setMessage("Success");
-        response.setStatus(UnravelConstants.TRUE);
-        response.setData(items.stream().map(ItemDetailDto::mapToItemDetailDtoSubType).collect(Collectors.toList()));
-        return response;
+    	   }
+    	   else if (!size.isPresent() || size==null || size.equals("")){
+    		   log.info("Failed");
+	    	   	response.setStatus(UnravelConstants.FALSE);
+	            response.setMessage( ApiResponseMessages.SIZE_NOT_FOUND);
+           return response;
+    	   }
+    	   else
+    	   {
+    	    	List<ItemDetail> items =  itemDetailRepository.findTopN(Long.valueOf(subtypeId.get()),size.get());
+    	        if(items.isEmpty()){
+    	            log.debug("No item found for  sub type-id: {} ", subtypeId);
+    	            response.setStatus(UnravelConstants.FALSE);
+    	            response.setMessage("No Record found");
+    	            return response;
+    	        }
+    	        response.setMessage("Success");
+    	        response.setStatus(UnravelConstants.TRUE);
+    	        response.setData(items.stream().map(ItemDetailDto::mapToItemDetailDtoSubType).collect(Collectors.toList()));
+    	        return response;   
+    	   }
     }
 }

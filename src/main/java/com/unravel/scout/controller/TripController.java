@@ -189,20 +189,30 @@ public class TripController {
   @GetMapping(EndpointRoutesV1.FETCH_TRIP_COUNTRY)
   @ApiOperation(value = "fetch Countries")
   @ApiResponse(code = 200, message = ApiResponseMessages.ITEM_FETCHED, response = Trip.class)
-  public ResponseEntity<TripInformationsDto> fetchTripCountry(@RequestParam("userId") String userId,@RequestParam("count") int count) {
+  public ResponseEntity<TripInformationsDto> fetchTripCountry(@RequestParam("userId") Optional<String> userId,@RequestParam("count") Optional<Integer> count) {
     log.info(String.format("GET %s => id: %s", EndpointRoutesV1.FETCH_TRIP_COUNTRY, userId));
 
-    List<CountryResponseDto> trip = tripService.fetchCountryByItemType(userId, count);
-
-    log.info("SUCCESS");
-    return new ResponseEntity(new RestResponseWrapper<>(1, trip, ApiResponseMessages.ITEM_FETCHED), HttpStatus.OK);
+    if(!userId.isPresent() || userId == null || userId.equals("")) {
+   	 log.info("Failed");
+   	return new ResponseEntity(new RestResponseWrapper<>(0, null, ApiResponseMessages.USER_ID_NULL), HttpStatus.OK);
+   }
+   else if (!count.isPresent() || count==null || count.equals("")){
+   	 log.info("Failed");
+   	return new ResponseEntity(new RestResponseWrapper<>(0, null, ApiResponseMessages.COUNT_NULL), HttpStatus.OK);
+   }
+   else
+   {
+   	 List<CountryResponseDto> trip = tripService.fetchCountryByItemType(userId.get(), count.get());
+		 log.info("SUCCESS");
+		 return new ResponseEntity(new RestResponseWrapper<>(1, trip, ApiResponseMessages.ITEM_FETCHED), HttpStatus.OK);
+   }
   }
 
   @GetMapping(EndpointRoutesV1.FETCH_TRIP_CATEGORY)
   @ApiOperation(value = "fetch categories")
   @ApiResponse(code = 200, message = ApiResponseMessages.ITEM_FETCHED, response = Trip.class)
-  public ResponseEntity<UnravelResponse> fetchCategory(@RequestParam("trip_id") String userId, @RequestParam(defaultValue = "0") int page,
-                                                              @RequestParam(defaultValue = "3") int size) {
+  public ResponseEntity<UnravelResponse> fetchCategory(@RequestParam("trip_id")  Optional<String>  userId, @RequestParam(defaultValue = "0") Optional<Integer> page,
+                                                              @RequestParam(defaultValue = "3") Optional<Integer> size) {
     log.info(String.format("GET %s => id: %s", EndpointRoutesV1.FETCH_TRIP_CATEGORY, userId));
     UnravelResponse response = tripService.fetchCategoryByTripId(userId,page,size);
     log.info("SUCCESS");
@@ -213,8 +223,8 @@ public class TripController {
   @GetMapping(EndpointRoutesV1.FETCH_ITEM_BY_TRIP_SUBTYPE)
   @ApiOperation(value = "fetch Items by Its SubType Id")
   @ApiResponse(code = 200, message = ApiResponseMessages.ITEM_FETCHED, response = Trip.class)
-  public ResponseEntity<UnravelResponse> fetchItemsBySubType(@RequestParam("sub_type_id") String subTypeId, @RequestParam(defaultValue = "0") int page,
-                                                                 @RequestParam(defaultValue = "3") int size) {
+  public ResponseEntity<UnravelResponse> fetchItemsBySubType(@RequestParam("sub_type_id") Optional<String> subTypeId, @RequestParam("page") Optional<Integer> page,
+                                                                 @RequestParam("size") Optional<Integer> size) {
     log.info(String.format("GET %s => id: %s", EndpointRoutesV1.FETCH_ITEM_BY_TRIP_SUBTYPE, subTypeId));
     UnravelResponse response = tripService.fetchItemsBySubType(subTypeId,size);
     log.info("SUCCESS");
